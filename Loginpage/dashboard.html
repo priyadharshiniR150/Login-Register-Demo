@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+ <main class="page">
+    <section class="dashboard">
+      <header class="header">
+        <div>
+       
+          <h1>User Dashboard</h1>
+        </div>
+        <button id="logoutButton" class="secondary" type="button" onclick="logout()">Logout</button>
+      </header>
+
+      <form id="userForm" class="user-form" onsubmit="saveUser(event)">
+        <input id="userId" type="hidden">
+        <input id="name" type="text" placeholder="Name" required>
+        <input id="email" type="email" placeholder="Email" required>
+        <input id="password" type="password" placeholder="Password">
+        <button id="saveButton" type="submit">Save</button>
+      </form>
+
+      <div id="status" class="status" hidden></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr>
+            <td colspan="4">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+<script>
+
+const API_BASE_URL="http://localhost:8081/api";
+const token=localStorage.getItem("authToken");
+const saveButton=document.getElementById("saveButton");
+const statusBox=document.getElementById("status");
+const tbody=document.getElementById("tbody");
+
+if(!token){
+    window.location.href="login.html";
+}
+
+function showStatus(message){
+    statusBox.textContent=message;
+    statusBox.hidden=false;
+}
+
+
+async function Request(path, options={}){
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+headers:{"Content-Type": "application/json",
+    Authorization:`Bearer ${token}`, 
+    ...(options.headers||{}),
+}
+});
+
+
+  const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : await response.text();
+
+
+
+if(!response.ok){
+throw new Error(typeof data ==="string"? data : "Request failed");
+
+}
+return data;
+}
+
+   async function getalluser(){
+
+     tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+
+try{
+const users=await Request("/get", {method: "GET"});
+
+if (!users.length) {
+          tbody.innerHTML = '<tr><td colspan="4">No users found</td></tr>';
+          return;
+        }
+tbody.innerHTML = users.map(function buildRow(user) {
+          return `
+            <tr>
+              <td>${user.id}</td>
+              <td>${user.name || ""}</td>
+              <td>${user.email || ""}</td>
+              <td>
+                <button type="button" class="secondary" onclick="edituser(${user.id})">Edit</button>
+                <button type="button" class="danger" onclick="deleteuser(${user.id})">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+         window.currentUsers = users;
+      } catch (error) {
+        showStatus(error.message || "Unable to load users");
+        tbody.innerHTML = '<tr><td colspan="4">Unable to load users</td></tr>';
+      }
+
+
+ }
+ 
+
+async function saveUser(event){
+    event.preventDefault();
+      saveButton.disabled = true;
+const id = document.getElementById("userId").value;
+      const user = {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+      };
+try{
+
+await Request (id? `/update/${id}` : "/add", {
+method: id?"PUT": "POST",
+body: JSON.stringify(user),
+});
+
+document.getElementById("userForm").reset();
+document.getElementById("userId").value="";
+document.getElementById("password").placeholder="password";
+saveButton.textContent="Save";
+  showStatus(id ? "User updated" : "User added");
+        await getalluser();
+      } catch (error) {
+        showStatus(error.message || "Save failed");
+      } finally {
+        saveButton.disabled = false;
+      }
+
+}
+
+
+ async function edituser(id){
+
+const users =window.currentUsers ||[];
+const user=users.find(function findbyId(item){
+    return String (item.id)===String (id);
+});
+if (!user) {
+        showStatus("User not found");
+        return;
+      }
+
+      document.getElementById("userId").value = user.id;
+      document.getElementById("name").value = user.name || "";
+      document.getElementById("email").value = user.email || "";
+      document.getElementById("password").value = "";
+      document.getElementById("password").placeholder = "New password";
+      saveButton.textContent = "Update";
+    }
+
+ async  function deleteuser(id){
+
+    try{
+
+await Request(`/delete/${id}`, {method:"DELETE"});
+ showStatus("User deleted");
+        await getalluser();
+      } catch (error) {
+        showStatus(error.message || "Delete failed");
+      }
+    }
+
+    function logout(){
+localStorage.removeItem("authToken");
+window.location.href="login.html";
+    }
+
+ getalluser();
+
+</script>
+</body>
+</html>
