@@ -1,9 +1,12 @@
 package com.example.demo.config;
 
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,7 +28,8 @@ public class LoginpageSecurity {
 		http
 		.csrf(csrf ->csrf.disable())
 		.authorizeHttpRequests(auth->auth
-		.requestMatchers("/api/register", "/api/login","/**" ).permitAll()
+		.requestMatchers(HttpMethod.OPTIONS, "/**" ).permitAll()
+		.requestMatchers("/api/register", "/api/login" ).permitAll()
 		.anyRequest().authenticated())
         .addFilterBefore(
                 jwtfilter,
@@ -41,9 +45,9 @@ public class LoginpageSecurity {
 public CorsFilter corsFilter() {
 	CorsConfiguration config=new CorsConfiguration();
 	config.setAllowCredentials(true);
-	config.addAllowedOrigin("http://localhost:5173");
-	config.addAllowedHeader("*");
-	config.addAllowedMethod("*");
+	config.addAllowedOrigin("http://127.0.0.1:5500");
+	config.setAllowedHeaders(List.of("Authorization", "content-type"));
+	config.setAllowedMethods(List.of("GET", "POST", "DELETE", "PUT"));
 UrlBasedCorsConfigurationSource source=new UrlBasedCorsConfigurationSource();
 source.registerCorsConfiguration("/**", config);
 return new CorsFilter(source);
