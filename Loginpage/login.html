@@ -16,9 +16,10 @@
       <h1>Login</h1>
 
       <form id="loginForm" onsubmit="loginuser(event)">
-        <input id="email" type="email" placeholder="Email" required><br>
+        <input id="email" type="text" placeholder="Email or Mobile Number" ><br>
         <input id="password" type="password" placeholder="Password" required><br>
         <button id="loginButton" type="submit">Login</button><br>
+        <a href="forgott.html">Forgot Password</a>
       </form>
 
       <div id="status" class="status" hidden></div>
@@ -33,6 +34,7 @@ const loginButton =document.getElementById("loginButton");
 const statusBox=document.getElementById("status");
 
 
+
 function showStatus(message){
 
     statusBox.textContent=message;
@@ -41,15 +43,58 @@ function showStatus(message){
 
 async function loginuser(event){
 	event.preventDefault();
-    loginButton.disabled = true;
-    showStatus("Logging in")
 
-const logindata={
- 
-    email:document.getElementById("email").value.trim(),
-    password: document.getElementById("password").value,
-    
+      const email=document.getElementById("email").value.trim();
+    const password=document.getElementById("password").value;
+
+    console.log("Input:", email);
+console.log("Length:", email.length);
+
+    const logindata = {
+    email: email,
+    password: password
 };
+
+    loginButton.disabled = true;
+    showStatus("Logging in");
+   
+
+ if (email=="") {
+        showStatus("Email or Mobile Number is Required");
+        loginButton.disabled = false;
+        return;
+    }
+const input = email.trim();
+
+const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+const isMobile = /^\d{10}$/.test(input);
+const inputField = document.getElementById("email");
+
+
+
+inputField.addEventListener("input", function () {
+    let value = this.value;
+
+ 
+   
+     if (/^\d+$/.test(value)) {
+        this.value = value.slice(0, 10);
+    }
+});
+if (!isEmail && !isMobile) {
+    showStatus("Enter a valid Email or 10-digit Mobile Number");
+    loginButton.disabled = false;
+    return;
+}
+
+
+    if (password=="") {
+        showStatus("Password is Required");
+        loginButton.disabled = false;
+        return;
+    }
+     
+    
 try{
      const response=await fetch (`${API_BASE_URL}/login`, {
     method:"POST",
@@ -57,13 +102,17 @@ try{
     body:JSON.stringify(logindata)
 });
 
-const token=await response.text();
-if(!response.ok || token.startsWith ("Invalid ")  || token.includes("not found")){
+const message=await response.text();
+ if (response.status === 401) {
+            showStatus(message);
+            return;
+        }
 
-    throw new Error (token || "Invalid email or password");
-
-}
-localStorage.setItem("authToken", token);
+        if (!response.ok) {
+            showStatus(message || "Login failed");
+            return;
+        }
+localStorage.setItem("authToken", message);
 window.location.href="dashboard.html";   
 }
 catch(error){
