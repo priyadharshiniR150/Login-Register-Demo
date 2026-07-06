@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.DTO.LoginResponse;
 import com.example.demo.entity.LoginpageEntity;
 import com.example.demo.jwtsecurity.LoginpageUtil;
 import com.example.demo.repository.LoginpageRepository;
@@ -36,29 +37,25 @@ import com.example.demo.repository.LoginpageRepository;
 	    	return "register successfully";
 	    }
 	    
-	    //login
-	    
-	    public String login(String email, String password) {
-	    	Optional<LoginpageEntity> dbuser=repo.findByEmail(email);
-	    	
-	    	
-	    	
-	    	if(dbuser.isPresent()) {
-	    		
-	    		if(passwordencoder.matches(password,dbuser.get().getPassword())) {
-	    		
-	    		
-	    		
-	    			String token=loginpageutil.generateToken(email);
-	    			return token;
-	    		}
-	    		else {
-	    	
-	    	return "Invalid  password";
-	    }
-	    
-	    	} 
-	    	return"Email not found";
+	    public LoginResponse login(String email, String password) {
+
+	        Optional<LoginpageEntity> dbuser = repo.findByEmail(email);
+
+	        if(dbuser.isPresent()) {
+
+	            if(passwordencoder.matches(password, dbuser.get().getPassword())) {
+
+	                String accessToken = loginpageutil.generateToken(email);
+
+	                String refreshToken = loginpageutil.generateRefreshToken(email);
+
+	                return new LoginResponse(accessToken, refreshToken);
+	            }
+
+	            throw new RuntimeException("Invalid Password");
+	        }
+
+	        throw new RuntimeException("Email Not Found");
 	    }
 	    //create 
 	    

@@ -33,6 +33,15 @@ public String generateToken(String email) {
 	.compact();
 	
 }
+public String generateRefreshToken(String email) {
+
+    return Jwts.builder()
+            .setSubject(email)
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24))
+            .signWith(getsignKey(), SignatureAlgorithm.HS256)
+            .compact();
+}
 public boolean isValidToken(String token) {
     try {
         Jwts.parserBuilder().setSigningKey(getsignKey()).build().parseClaimsJws(token);
@@ -50,6 +59,7 @@ public String extractEmail(String token) {
             .getBody()
             .getSubject();
 }
+
 }
 
 

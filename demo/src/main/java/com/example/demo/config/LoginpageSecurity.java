@@ -29,7 +29,8 @@ public class LoginpageSecurity {
 		.csrf(csrf ->csrf.disable())
 		.authorizeHttpRequests(auth->auth
 		.requestMatchers(HttpMethod.OPTIONS, "/**" ).permitAll()
-		.requestMatchers("/api/register", "/api/login" ).permitAll()
+		.requestMatchers("/api/register", "/api/login" , "/api/refresh").permitAll()
+		
 		.anyRequest().authenticated())
         .addFilterBefore(
                 jwtfilter,
@@ -46,7 +47,7 @@ public CorsFilter corsFilter() {
 	CorsConfiguration config=new CorsConfiguration();
 	config.setAllowCredentials(true);
 	config.addAllowedOrigin("http://127.0.0.1:5500");
-	config.setAllowedHeaders(List.of("Authorization", "content-type"));
+	config.addAllowedHeader("*");
 	config.setAllowedMethods(List.of("GET", "POST", "DELETE", "PUT"));
 UrlBasedCorsConfigurationSource source=new UrlBasedCorsConfigurationSource();
 source.registerCorsConfiguration("/**", config);
